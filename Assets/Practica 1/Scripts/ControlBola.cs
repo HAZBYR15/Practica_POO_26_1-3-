@@ -1,52 +1,71 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SocialPlatforms.Impl;
 
 public class ControlBola : MonoBehaviour
 {
-    public Rigidbody rb;
+    //Fuerza con la que se lanza la bola
     public float fuerzaDeLanzamiento = 1000f;
-    public float velocidadMovimiento = 10f;
+    //Velocidad y limites de apuntado
+    public float velocidaddeApuntado = 5f;
+    public float limiteIzquierdo = -3f;
+    public float limiteDerecho = 2f;
 
-    [Header("Cámara")]
-    public Transform camara;
-    public float suavizadoCamara = 5f;
-    public Vector3 offsetCamara = new Vector3(0f, 5f, -10f);
+    //Referencias internas
+    private Rigidbody rb;
+    private bool haSidoLanzada = false;
+
+    //REferencia ala camara y score
+    public CamaraFollow cameraFollow;
+    public ScoreManager scoreManager;
 
     void Start()
-    {
-        if (rb == null)
+    
         {
             rb = GetComponent<Rigidbody>();
         }
-
-        if (camara == null && Camera.main != null)
-        {
-            camara = Camera.main.transform;
-        }
-    }
-
-    void Update()
+    private void Update()
     {
-        // Movimiento con WASD
-        float moverH = Input.GetAxis("Horizontal"); // A (-1) / D (+1)
-        float moverV = Input.GetAxis("Vertical");   // S (-1) / W (+1)
-
-        Vector3 movimiento = new Vector3(moverH, 0f, moverV) * velocidadMovimiento;
-        rb.AddForce(movimiento);
-
-        // Lanzamiento hacia adelante con espacio
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            rb.AddForce(Vector3.forward * fuerzaDeLanzamiento);
-        }
-
-        // Seguimiento de cámara
-        if (camara != null)
-        {
-            Vector3 posicionDeseada = transform.position + offsetCamara;
-            camara.position = Vector3.Lerp(camara.position, posicionDeseada, suavizadoCamara * Time.deltaTime);
-            camara.LookAt(transform);
+        if (!haSidoLanzada) {
+            Apuntar();
+            if (Input.GetKeyUp(KeyCode.Escape))
+            {
+                LanzarBola(),
+                    }
         }
     }
-}
+    void apuntar()
+    {
+        float inputHorizontal = Input.GetAxis("Horizontal")
+            transform.Translate(Vector3.right * inputHorizontal * velocidaddeApuntado * Time.deltaTime);
+        Vector3 posicionActual = transform.position;
+        posicionActual.x = Mathf.Clamp(posicionActual.x, limiteIzquierdo, limiteDerecho);
+        transform.position = posicionActual;
+    }
+    void Lanzar()
+    {
+        haSidoLanzada = true;
+        rb.AddForce(Vector3.forward * fuerzaDeLanzamiento);
+        if (cameraFollow != null) cameraFollow.IniciarSeguimiento();
+        
+
+        void OnCollisionEnter(Collision collision)
+        {
+            
+            if (collision.gameObject.CompareTag("Pin"))
+            {
+
+                if (cameraFollow != null) cameraFollow.DetenerSeguimiento();
+
+               
+                 if (scoreManager != null) Invoke("Calcular puntaje", 2f);
+            }
+        }
+        void CalcularPuntaje()
+        {
+            //PISTA:Llamar al scoreManager para actualizar puntos
+            scoreManager.CalcularPuntaje();
+        }
+    }
+
